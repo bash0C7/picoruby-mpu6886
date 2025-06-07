@@ -21,6 +21,10 @@ class MPU6886
   REG_ACCEL_CONFIG: Integer
   REG_GYRO_CONFIG: Integer
 
+  # Additional register constants from implementation
+  REG_WHO_AM_I: Integer
+  CHIP_ID: Integer
+
   # Scale value hashes
   ACCEL_SCALES: Hash[Integer, Float]
   GYRO_SCALES: Hash[Integer, Float]
@@ -34,12 +38,8 @@ class MPU6886
   @accel_scale: Float
   @gyro_scale: Float
 
-  def initialize: (
-    ?Integer i2c_unit, 
-    ?i2c_instance: I2C?, 
-    ?sda_pin: Integer, 
-    ?scl_pin: Integer
-  ) -> void
+  # Corrected constructor signature to match implementation
+  def initialize: (I2C i2c_instance) -> void
 
   def acceleration: () -> vector_hash
   def gyroscope: () -> vector_hash
