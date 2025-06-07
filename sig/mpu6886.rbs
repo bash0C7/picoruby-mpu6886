@@ -1,18 +1,18 @@
 # @sidebar sensors
 class MPU6886
-  # 加速度レンジ定数
+  # Accelerometer range constants
   ACCEL_RANGE_2G: Integer
   ACCEL_RANGE_4G: Integer
   ACCEL_RANGE_8G: Integer
   ACCEL_RANGE_16G: Integer
 
-  # ジャイロレンジ定数
+  # Gyroscope range constants
   GYRO_RANGE_250DPS: Integer
   GYRO_RANGE_500DPS: Integer
   GYRO_RANGE_1000DPS: Integer
   GYRO_RANGE_2000DPS: Integer
 
-  # I2Cレジスタ定数
+  # I2C register constants
   I2C_ADDRESS: Integer
   REG_PWR_MGMT_1: Integer
   REG_ACCEL_XOUT_H: Integer
@@ -21,11 +21,11 @@ class MPU6886
   REG_ACCEL_CONFIG: Integer
   REG_GYRO_CONFIG: Integer
 
-  # スケール値ハッシュ
+  # Scale value hashes
   ACCEL_SCALES: Hash[Integer, Float]
   GYRO_SCALES: Hash[Integer, Float]
 
-  # 3軸データ用の型
+  # Types for 3-axis data
   type vector_hash = { x: Float, y: Float, z: Float }
   type sensor_data = { accel: vector_hash, gyro: vector_hash, temp: Float }
   type tilt_data = { pitch: Float, roll: Float }

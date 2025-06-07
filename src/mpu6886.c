@@ -4,17 +4,17 @@
 
 #include <mrubyc.h>
 
-// ダミーの初期化関数（gemシステムが期待する関数名）
+// Dummy initialization function (expected by gem system)
 void
 mrbc_mpu6886_init(mrbc_vm *vm)
 {
-  // Pure Ruby実装のため、何もしない
-  // 全ての機能はmrblib/mpu6886.rbで実装されている
+  // Nothing to do for pure Ruby implementation
+  // All functionality is implemented in mrblib/mpu6886.rb
 }
 
-// 必要に応じてfinal関数も定義（通常は不要）
+// Define final function if needed (usually not required)
 void
 mrbc_mpu6886_final(mrbc_vm *vm)
 {
-  // Pure Ruby実装のため、何もしない
+  // Nothing to do for pure Ruby implementation
 }

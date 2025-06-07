@@ -2,7 +2,6 @@
 #define MPU6886_H_
 
 // MPU6886 sensor constants (used in Ruby implementation)
-// All implementation is done in mrblib/mpu6886.rb
 
 // MPU6886 I2C address
 #define MPU6886_I2C_ADDRESS 0x68
