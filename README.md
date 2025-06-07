@@ -7,7 +7,7 @@ A pure Ruby implementation of MPU6886 6-axis inertial sensor driver for PicoRuby
 Add this line to your PicoRuby build configuration (`picoruby/build_config/xtensa-esp.rb`):
 
 ```ruby
-conf.gem github: 'bash0C7/picoruby-mpu6886'
+conf.gem github: 'bash0C7/picoruby-mpu6886', branch: 'main'
 ```
 
 ## Dependencies
