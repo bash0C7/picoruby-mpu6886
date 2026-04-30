@@ -128,6 +128,34 @@ class MPU6886
     }
   end
 
+  # Get all sensor data atomically via a single 14-byte I2C burst.
+  # Reads REG_ACCEL_XOUT_H..REG_GYRO_ZOUT_L (0x3B..0x48) in one transaction.
+  # @return [Hash] { accel: {x:, y:, z:}, gyro: {x:, y:, z:}, temp: Float }
+  def snapshot
+    data = read_reg(REG_ACCEL_XOUT_H, 14)
+    raw_ax = to_signed_16bit((data[0] << 8) | data[1])
+    raw_ay = to_signed_16bit((data[2] << 8) | data[3])
+    raw_az = to_signed_16bit((data[4] << 8) | data[5])
+    raw_t  = to_signed_16bit((data[6] << 8) | data[7])
+    raw_gx = to_signed_16bit((data[8] << 8) | data[9])
+    raw_gy = to_signed_16bit((data[10] << 8) | data[11])
+    raw_gz = to_signed_16bit((data[12] << 8) | data[13])
+
+    {
+      accel: {
+        x: raw_ax / @accel_scale,
+        y: raw_ay / @accel_scale,
+        z: raw_az / @accel_scale,
+      },
+      gyro: {
+        x: raw_gx / @gyro_scale,
+        y: raw_gy / @gyro_scale,
+        z: raw_gz / @gyro_scale,
+      },
+      temp: raw_t / 326.8 + 25.0,
+    }
+  end
+
   # Calculate combined acceleration
   # @return [Float] Combined acceleration (G units)
   def magnitude
