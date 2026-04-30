@@ -119,7 +119,10 @@ class MPU6886
   end
 
   # Read all sensor data at once via a single 14-byte I2C burst.
+  # Kept as a public-API alias of {#snapshot} for backward compatibility
+  # (referenced by the mrubygirls Atom Matrix guide and existing user code).
   # @return [Hash] {accel: Hash, gyro: Hash, temp: Float}
+  # @see #snapshot
   def read_all
     snapshot
   end
