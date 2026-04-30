@@ -155,6 +155,53 @@ class MPU6886
     }
   end
 
+  # Configure the sampling interval for both tick() and start_sampling().
+  # @param interval_ms [Integer] minimum milliseconds between successive samples
+  def configure_sampling(interval_ms: 20)
+    @sampler_interval_ms = interval_ms
+  end
+
+  # Cooperative single-loop sampler. Call from your main loop.
+  # Performs one snapshot if at least @sampler_interval_ms have elapsed since
+  # the last sample (or no sample has been taken yet); otherwise no-op.
+  # @param now_ms [Integer, nil] current monotonic millisecond count.
+  #   Pass nil to use Machine.uptime_us / 1000 if available, else 0.
+  # @return [Boolean] true if a fresh sample was taken
+  def tick(now_ms = nil)
+    now_ms = _now_ms if now_ms.nil?
+    if !@latest.nil? && (now_ms - @latest_at_ms) < @sampler_interval_ms
+      return false
+    end
+    @latest = snapshot
+    @latest_at_ms = now_ms
+    true
+  end
+
+  # @return [Boolean] true once at least one sample has been cached
+  def fresh?
+    !@latest.nil?
+  end
+
+  # @return [Hash, nil] the most recent full snapshot, or nil if never sampled
+  def latest_snapshot
+    @latest
+  end
+
+  # @return [Hash, nil] {x:, y:, z:} from the latest snapshot, or nil
+  def latest_acceleration
+    @latest && @latest[:accel]
+  end
+
+  # @return [Hash, nil] {x:, y:, z:} from the latest snapshot, or nil
+  def latest_gyroscope
+    @latest && @latest[:gyro]
+  end
+
+  # @return [Float, nil] temperature from the latest snapshot, or nil
+  def latest_temperature
+    @latest && @latest[:temp]
+  end
+
   # Calculate combined acceleration
   # @return [Float] Combined acceleration (G units)
   def magnitude
@@ -243,5 +290,16 @@ class MPU6886
   # @return [Integer] Signed 16-bit value
   def to_signed_16bit(value)
     value > 32767 ? value - 65536 : value
+  end
+
+  # Monotonic millisecond clock. Uses Machine.uptime_us when available
+  # (R2P2-ESP32 firmware); falls back to 0 on host where the test always
+  # passes an explicit now_ms to tick().
+  def _now_ms
+    if Object.const_defined?(:Machine)
+      Machine.uptime_us / 1000
+    else
+      0
+    end
   end
 end
