@@ -246,6 +246,18 @@ class MPU6886
   # compile a script string and use Task.create. microruby (mruby) accepts a
   # block on Task.new normally. Pattern lifted from picoruby-psg/mrblib/driver.rb.
   #
+  # Cached latest_* values are reset to nil on start; the first sample arrives
+  # after one full interval_ms. Use #fresh? to gate access.
+  #
+  # If a sampler is already running, this call is a no-op AND the interval_ms:
+  # kwarg is ignored. To change interval at runtime: stop_sampling, then
+  # configure_sampling(interval_ms: ...), then start_sampling again.
+  #
+  # Concurrency note: the global $__mpu6886_sampler_target is overwritten on
+  # each call. Concurrent start_sampling from multiple MPU6886 instances is
+  # not supported (the spawned Task captures self before the next call could
+  # clobber it under cooperative scheduling, but assume single-IMU apps).
+  #
   # @param interval_ms [Integer] sampling interval in ms (default DEFAULT_SAMPLER_INTERVAL_MS = 50Hz)
   # @return [Task] handle to the running sampler
   def start_sampling(interval_ms: DEFAULT_SAMPLER_INTERVAL_MS)
@@ -270,7 +282,10 @@ class MPU6886
   end
 
   # Halt the background sampler and clear the Task handle.
-  # Safe to call when no sampler is running.
+  # Safe to call when no sampler is running. `join` may block up to
+  # @sampler_interval_ms while the Task completes its current sleep_ms;
+  # with the default 20ms this is negligible, but a 1000ms interval will
+  # take up to that long to shut down.
   def stop_sampling
     return unless @sampler_task
     @sampler_running = false
@@ -280,6 +295,8 @@ class MPU6886
 
   # Body of the background sampler Task. Public-by-necessity because
   # the spawned Task script and the block both invoke it via send.
+  # DO NOT call directly: this loops until @sampler_running is set false
+  # externally. Use start_sampling / stop_sampling.
   def _run_sampler_loop
     while @sampler_running
       @latest = snapshot
