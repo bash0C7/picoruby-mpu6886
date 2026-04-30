@@ -118,14 +118,10 @@ class MPU6886
     @gyro_scale = GYRO_SCALES[range] || GYRO_SCALES[GYRO_RANGE_250DPS]
   end
 
-  # Read all sensor data at once
+  # Read all sensor data at once via a single 14-byte I2C burst.
   # @return [Hash] {accel: Hash, gyro: Hash, temp: Float}
   def read_all
-    {
-      accel: acceleration,
-      gyro: gyroscope,
-      temp: temperature
-    }
+    snapshot
   end
 
   # Get all sensor data atomically via a single 14-byte I2C burst.
