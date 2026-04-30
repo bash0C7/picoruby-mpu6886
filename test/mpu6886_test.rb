@@ -7,6 +7,11 @@ module Kernel
   def sleep_ms(_ms); end
 end
 
+# PicoRuby shim: 'i2c' is provided by the picoruby runtime as a built-in.
+# Under CRuby that file does not exist; mark it as already loaded so that
+# `require 'i2c'` in mrblib/mpu6886.rb is a no-op for host tests.
+$LOADED_FEATURES << "i2c" unless $LOADED_FEATURES.include?("i2c")
+
 require "test/unit"
 
 class FakeI2C
@@ -48,5 +53,36 @@ class HarnessTest < Test::Unit::TestCase
     bytes = i2c.read(0x68, 1, 0x75)
     assert_equal "\x19", bytes.b
     assert_equal 1, i2c.reads.size
+  end
+end
+
+require "mpu6886"
+
+class MPU6886InitSamplerStateTest < Test::Unit::TestCase
+  def setup
+    @i2c = FakeI2C.new
+    # WHO_AM_I returns CHIP_ID 0x19
+    @i2c.queue_read("\x19".b)
+    @mpu = MPU6886.new(@i2c)
+  end
+
+  def test_latest_is_nil_after_init
+    assert_nil @mpu.instance_variable_get(:@latest)
+  end
+
+  def test_latest_at_ms_is_zero_after_init
+    assert_equal 0, @mpu.instance_variable_get(:@latest_at_ms)
+  end
+
+  def test_default_sampler_interval_ms_is_20
+    assert_equal 20, @mpu.instance_variable_get(:@sampler_interval_ms)
+  end
+
+  def test_sampler_task_is_nil_after_init
+    assert_nil @mpu.instance_variable_get(:@sampler_task)
+  end
+
+  def test_sampler_running_is_false_after_init
+    assert_equal false, @mpu.instance_variable_get(:@sampler_running)
   end
 end
