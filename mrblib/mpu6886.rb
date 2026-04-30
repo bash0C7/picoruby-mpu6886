@@ -238,6 +238,56 @@ class MPU6886
     magnitude > (1.0 + threshold) || magnitude < (1.0 - threshold)
   end
 
+  # Spawn a background Task that calls snapshot every @sampler_interval_ms
+  # and updates the cached latest_* values. Idempotent: a second call with an
+  # already-running sampler returns the existing Task handle.
+  #
+  # Dual-engine: mruby/c does not forward blocks to Task#initialize, so we
+  # compile a script string and use Task.create. microruby (mruby) accepts a
+  # block on Task.new normally. Pattern lifted from picoruby-psg/mrblib/driver.rb.
+  #
+  # @param interval_ms [Integer] sampling interval in ms (default DEFAULT_SAMPLER_INTERVAL_MS = 50Hz)
+  # @return [Task] handle to the running sampler
+  def start_sampling(interval_ms: DEFAULT_SAMPLER_INTERVAL_MS)
+    return @sampler_task if @sampler_task
+    @sampler_interval_ms = interval_ms
+    @sampler_running = true
+    @latest = nil
+    @latest_at_ms = 0
+    if RUBY_ENGINE == "mruby/c"
+      $__mpu6886_sampler_target = self
+      mrb = PicoRubyVM::InstructionSequence.compile(
+        '$__mpu6886_sampler_target._run_sampler_loop'
+      ).to_binary
+      @sampler_task = Task.create(mrb)
+      raise "MPU6886: failed to create sampler task" if @sampler_task.nil?
+      @sampler_task.run
+    else
+      mpu = self
+      @sampler_task = Task.new { mpu._run_sampler_loop }
+    end
+    @sampler_task
+  end
+
+  # Halt the background sampler and clear the Task handle.
+  # Safe to call when no sampler is running.
+  def stop_sampling
+    return unless @sampler_task
+    @sampler_running = false
+    @sampler_task.join
+    @sampler_task = nil
+  end
+
+  # Body of the background sampler Task. Public-by-necessity because
+  # the spawned Task script and the block both invoke it via send.
+  def _run_sampler_loop
+    while @sampler_running
+      @latest = snapshot
+      @latest_at_ms = _now_ms
+      sleep_ms(@sampler_interval_ms)
+    end
+  end
+
   private
 
   # Initialize sensor
