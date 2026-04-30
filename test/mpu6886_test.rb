@@ -141,3 +141,33 @@ class MPU6886SnapshotTest < Test::Unit::TestCase
     assert_in_delta(-128.0 / 131.0, snap[:gyro][:x], 1e-6)
   end
 end
+
+class MPU6886ReadAllBurstTest < Test::Unit::TestCase
+  def setup
+    @i2c = FakeI2C.new
+    @i2c.queue_read("\x19".b)
+    @mpu = MPU6886.new(@i2c)
+    @i2c.writes.clear
+    @i2c.reads.clear
+  end
+
+  def test_read_all_uses_single_14_byte_burst_not_three_reads
+    @i2c.queue_read(("\x00".b * 14))
+
+    result = @mpu.read_all
+
+    assert_equal 1, @i2c.reads.size,
+      "read_all must do exactly one I2C transaction (was three)"
+    assert_equal 14, @i2c.reads.first[:length]
+    assert_equal 0x3B, @i2c.reads.first[:reg]
+
+    # Return shape must be backward compatible
+    assert_kind_of Hash, result
+    assert_kind_of Hash, result[:accel]
+    assert result[:accel].key?(:x)
+    assert result[:accel].key?(:y)
+    assert result[:accel].key?(:z)
+    assert_kind_of Hash, result[:gyro]
+    assert_kind_of Float, result[:temp]
+  end
+end
