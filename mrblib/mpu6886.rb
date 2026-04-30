@@ -170,6 +170,10 @@ class MPU6886
   # the last sample (or no sample has been taken yet); otherwise no-op.
   # @param now_ms [Integer, nil] current monotonic millisecond count.
   #   Pass nil to use Machine.uptime_us / 1000 if available, else 0.
+  #   The caller is responsible for monotonicity: passing a value smaller
+  #   than the previous now_ms produces no-op behaviour rather than
+  #   re-sampling. Production callers on R2P2-ESP32 should rely on the nil
+  #   default (which uses the monotonic Machine.uptime_us).
   # @return [Boolean] true if a fresh sample was taken
   def tick(now_ms = nil)
     now_ms = _now_ms if now_ms.nil?
