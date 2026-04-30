@@ -171,3 +171,73 @@ class MPU6886ReadAllBurstTest < Test::Unit::TestCase
     assert_kind_of Float, result[:temp]
   end
 end
+
+class MPU6886TickSamplerTest < Test::Unit::TestCase
+  ZERO14 = ("\x00".b * 14).freeze
+  ONEG14 = ([0x40, 0x00] + [0x00] * 12).pack("C*").freeze
+
+  def setup
+    @i2c = FakeI2C.new
+    @i2c.queue_read("\x19".b)
+    @mpu = MPU6886.new(@i2c)
+    @i2c.writes.clear
+    @i2c.reads.clear
+  end
+
+  def test_fresh_is_false_before_first_sample
+    assert_equal false, @mpu.fresh?
+  end
+
+  def test_latest_accessors_are_nil_before_first_sample
+    assert_nil @mpu.latest_snapshot
+    assert_nil @mpu.latest_acceleration
+    assert_nil @mpu.latest_gyroscope
+    assert_nil @mpu.latest_temperature
+  end
+
+  def test_first_tick_always_samples
+    @i2c.queue_read(ONEG14)
+    sampled = @mpu.tick(1000)
+    assert_equal true, sampled
+    assert_equal true, @mpu.fresh?
+    assert_in_delta 1.0, @mpu.latest_acceleration[:x], 1e-6
+    assert_equal 1, @i2c.reads.size
+  end
+
+  def test_tick_within_interval_is_noop
+    @i2c.queue_read(ZERO14)
+    assert_equal true, @mpu.tick(1000)            # interval=20ms default; first sample
+    assert_equal false, @mpu.tick(1010)           # 10ms elapsed -> skip
+    assert_equal 1, @i2c.reads.size, "no second I2C read should fire inside the interval"
+  end
+
+  def test_tick_after_interval_samples_again
+    @i2c.queue_read(ZERO14)
+    @i2c.queue_read(ONEG14)
+    @mpu.tick(1000)
+    sampled = @mpu.tick(1025)                     # 25ms elapsed > 20ms default
+    assert_equal true, sampled
+    assert_equal 2, @i2c.reads.size
+    assert_in_delta 1.0, @mpu.latest_acceleration[:x], 1e-6
+  end
+
+  def test_configure_sampling_changes_interval
+    @mpu.configure_sampling(interval_ms: 100)
+    @i2c.queue_read(ZERO14)
+    @i2c.queue_read(ZERO14)
+    @mpu.tick(0)
+    assert_equal false, @mpu.tick(50),  "still within new 100ms interval"
+    assert_equal true,  @mpu.tick(150), "now beyond 100ms interval"
+  end
+
+  def test_latest_acceleration_returns_cached_hash
+    @i2c.queue_read(ONEG14)
+    @mpu.tick(1000)
+    a = @mpu.latest_acceleration
+    g = @mpu.latest_gyroscope
+    t = @mpu.latest_temperature
+    assert_in_delta 1.0, a[:x], 1e-6
+    assert_in_delta 0.0, g[:x], 1e-6
+    assert_in_delta 25.0, t, 1e-6
+  end
+end
