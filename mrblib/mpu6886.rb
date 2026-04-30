@@ -45,6 +45,10 @@ class MPU6886
     GYRO_RANGE_2000DPS => 16.4
   }
 
+  # Default tick / start_sampling interval, used by init_sensor seed and as
+  # the configure_sampling kwarg default. Single source of truth.
+  DEFAULT_SAMPLER_INTERVAL_MS = 20
+
   # Initialize
   # @param i2c_instance [I2C] Existing I2C instance
   def initialize(i2c_instance)
@@ -157,7 +161,7 @@ class MPU6886
 
   # Configure the sampling interval for both tick() and start_sampling().
   # @param interval_ms [Integer] minimum milliseconds between successive samples
-  def configure_sampling(interval_ms: 20)
+  def configure_sampling(interval_ms: DEFAULT_SAMPLER_INTERVAL_MS)
     @sampler_interval_ms = interval_ms
   end
 
@@ -237,7 +241,7 @@ class MPU6886
     # Sampler state seeds (must precede any read; tick/start_sampling rely on them)
     @latest = nil
     @latest_at_ms = 0
-    @sampler_interval_ms = 20
+    @sampler_interval_ms = DEFAULT_SAMPLER_INTERVAL_MS
     @sampler_task = nil
     @sampler_running = false
 
