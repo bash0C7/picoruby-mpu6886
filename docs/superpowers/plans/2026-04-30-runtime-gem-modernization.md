@@ -41,7 +41,7 @@ DELETED:
 └── include/                   # Empty dir
 
 Outside this repo (combat-proof additions in ~/dev/src/github.com/bash0C7/picoruby-recipes):
-└── components/R2P2-ESP32/storage/home/imu_async.rb   # NEW reference example
+└── src_components/R2P2-ESP32/storage/home/imu_async.rb   # NEW reference example
 ```
 
 **Test design philosophy.** Host tests use a hand-rolled `FakeI2C` double (records every read/write call and serves canned response bytes from a queue) instead of stub/mock libraries — assertions on the recording are explicit, robust, and free of mock-library coupling. `sleep_ms` is shadowed in the test file with a no-op so `init_sensor` runs synchronously on CRuby. `Task` and `RUBY_ENGINE == "mruby/c"` paths are NOT host-tested — they are validated on-device in tasks 13–14.
@@ -1233,12 +1233,13 @@ This works on both R2P2-ESP32 (mruby/c) and microruby host builds.
   CRuby development.
 - Background `start_sampling` is **not** host-tested — it requires a running
   Task scheduler. Validate it via the combat-proof example in
-  `picoruby-recipes/components/R2P2-ESP32/storage/home/imu_async.rb`.
+  `picoruby-recipes/src_components/R2P2-ESP32/storage/home/imu_async.rb`.
 
 ## Combat-proof location
 
 Reference Ruby examples for ATOM Matrix live in
-`~/dev/src/github.com/bash0C7/picoruby-recipes/components/R2P2-ESP32/storage/home/`.
+`~/dev/src/github.com/bash0C7/picoruby-recipes/src_components/R2P2-ESP32/storage/home/`
+(`components/` is a build-time mirror that is gitignored; the canonical source lives under `src_components/`).
 After any non-trivial change, smoke-test:
 
 - `imu.rb` — synchronous polling, the existing baseline (must keep working).
@@ -1359,7 +1360,7 @@ If this fails: do NOT proceed. Roll back to investigate.
 ## Task 18: Combat-proof — new `imu_async.rb` (background sampler on real ATOM Matrix)
 
 **Files:**
-- Create: `~/dev/src/github.com/bash0C7/picoruby-recipes/components/R2P2-ESP32/storage/home/imu_async.rb` (in the **picoruby-recipes** repo, not this one).
+- Create: `~/dev/src/github.com/bash0C7/picoruby-recipes/src_components/R2P2-ESP32/storage/home/imu_async.rb` (in the **picoruby-recipes** repo, not this one).
 
 - [ ] **Step 18.1: Create the example file**
 
@@ -1406,7 +1407,7 @@ puts "stopped"
 
 ```bash
 cd ~/dev/src/github.com/bash0C7/picoruby-recipes
-git add components/R2P2-ESP32/storage/home/imu_async.rb
+git add src_components/R2P2-ESP32/storage/home/imu_async.rb
 git commit -m "feat: add imu_async.rb to validate mpu6886 background sampler"
 ```
 
