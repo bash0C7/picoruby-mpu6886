@@ -160,6 +160,13 @@ class MPU6886
 
   # Initialize sensor
   def init_sensor
+    # Sampler state seeds (must precede any read; tick/start_sampling rely on them)
+    @latest = nil
+    @latest_at_ms = 0
+    @sampler_interval_ms = 20
+    @sampler_task = nil
+    @sampler_running = false
+
     # Check chip ID
     chip_id = read_reg(REG_WHO_AM_I, 1)[0]
     raise "Invalid MPU6886 chip ID: 0x#{chip_id.to_s(16)} (expected: 0x#{CHIP_ID.to_s(16)})" unless chip_id == CHIP_ID
