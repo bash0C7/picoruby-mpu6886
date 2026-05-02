@@ -297,20 +297,23 @@ class MPU6886
   # the spawned Task script and the block both invoke it via send.
   # DO NOT call directly: this loops until @sampler_running is set false
   # externally. Use start_sampling / stop_sampling.
+  #
+  # Intentionally does not update @latest_at_ms: calling Machine.uptime_us
+  # from within an mruby/c Task causes silent Task death after one iteration.
+  # The synchronous tick() path keeps maintaining @latest_at_ms when callers
+  # use it; in pure async mode @latest_at_ms stays at the start_sampling
+  # reset value (0).
   def _run_sampler_loop
     while @sampler_running
       @latest = snapshot
-      @latest_at_ms = _now_ms
       sleep_ms(@sampler_interval_ms)
     end
   end
 
   # Monotonic millisecond clock. Calls Machine.uptime_us directly; on host
-  # the test harness stubs Machine. The `Object.const_defined?` guard was
-  # removed because it caused silent Task death on mruby/c (Task swallows
-  # the exception from the lookup, ending the sampler after one iteration).
-  # Public-but-internal (single-underscore prefix) so the spawned Task
-  # body can reach it across VM contexts on mruby/c.
+  # the test harness stubs Machine. Only callable from the main task context
+  # (synchronous tick() fallback) — invoking it from a background Task
+  # silently kills the Task on mruby/c.
   def _now_ms
     Machine.uptime_us / 1000
   end
