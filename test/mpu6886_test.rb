@@ -12,6 +12,17 @@ end
 # `require 'i2c'` in mrblib/mpu6886.rb is a no-op for host tests.
 $LOADED_FEATURES << "i2c" unless $LOADED_FEATURES.include?("i2c")
 
+# PicoRuby shim: Machine.uptime_us is the on-device monotonic microsecond
+# clock. _now_ms calls it directly (the runtime-detection guard was removed
+# because it caused silent Task death on mruby/c). Stub it for host tests.
+unless defined?(Machine)
+  module Machine
+    def self.uptime_us
+      0
+    end
+  end
+end
+
 require "test/unit"
 
 class FakeI2C

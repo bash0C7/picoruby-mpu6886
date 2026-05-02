@@ -305,17 +305,14 @@ class MPU6886
     end
   end
 
-  # Monotonic millisecond clock. Uses Machine.uptime_us when available
-  # (R2P2-ESP32 firmware); falls back to 0 on host where the test always
-  # passes an explicit now_ms to tick().
+  # Monotonic millisecond clock. Calls Machine.uptime_us directly; on host
+  # the test harness stubs Machine. The `Object.const_defined?` guard was
+  # removed because it caused silent Task death on mruby/c (Task swallows
+  # the exception from the lookup, ending the sampler after one iteration).
   # Public-but-internal (single-underscore prefix) so the spawned Task
   # body can reach it across VM contexts on mruby/c.
   def _now_ms
-    if Object.const_defined?(:Machine)
-      Machine.uptime_us / 1000
-    else
-      0
-    end
+    Machine.uptime_us / 1000
   end
 
   private
