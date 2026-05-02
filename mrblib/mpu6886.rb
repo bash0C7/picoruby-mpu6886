@@ -303,10 +303,15 @@ class MPU6886
   # The synchronous tick() path keeps maintaining @latest_at_ms when callers
   # use it; in pure async mode @latest_at_ms stays at the start_sampling
   # reset value (0).
+  #
+  # @sampler_interval_ms is cached to a local var before the loop because
+  # passing the ivar directly to sleep_ms inside the loop body has been
+  # observed to misbehave on mruby/c — the safe form is a stable local.
   def _run_sampler_loop
+    interval_ms = @sampler_interval_ms
     while @sampler_running
       @latest = snapshot
-      sleep_ms(@sampler_interval_ms)
+      sleep_ms(interval_ms)
     end
   end
 
