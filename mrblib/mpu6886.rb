@@ -304,13 +304,19 @@ class MPU6886
   # use it; in pure async mode @latest_at_ms stays at the start_sampling
   # reset value (0).
   #
-  # @sampler_interval_ms is cached to a local var before the loop because
-  # passing the ivar directly to sleep_ms inside the loop body has been
-  # observed to misbehave on mruby/c — the safe form is a stable local.
+  # @sampler_interval_ms is cached to a local var before the loop to avoid
+  # any per-iteration ivar lookup cost.
+  #
+  # Task.pass is the load-bearing line. Without an explicit yield, the
+  # mruby/c scheduler does not give the main task room to run between
+  # iterations, and refcount-only memory pressure builds until either the
+  # Task hangs or the VM OOMs. sleep_ms alone is not sufficient on the
+  # picoruby-mrubyc version this gem currently targets.
   def _run_sampler_loop
     interval_ms = @sampler_interval_ms
     while @sampler_running
       @latest = snapshot
+      Task.pass
       sleep_ms(interval_ms)
     end
   end
